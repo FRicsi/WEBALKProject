@@ -1,0 +1,6 @@
+@MinervAI_HostAddress = http://localhost:5007
+
+GET {{MinervAI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
