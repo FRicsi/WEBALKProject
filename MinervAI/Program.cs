@@ -18,7 +18,15 @@ builder.Services.AddHostedService<MinervaImageWorker>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "MinervAI API",
+        Version = "v1",
+        Description = "AI-generated course illustrations"
+    });
+});
 
 var app = builder.Build();
 
