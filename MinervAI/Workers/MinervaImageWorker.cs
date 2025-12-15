@@ -1,11 +1,9 @@
-namespace MinervAI.Workers;
 using MinervAI.Services;
 using MinervAI.Models;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace MinervAI.Workers;
-
+namespace MinervAI.Workers{
 public class MinervaImageWorker : BackgroundService
 {
     private readonly CourseImageService _courseImageService;
@@ -51,4 +49,5 @@ public class MinervaImageWorker : BackgroundService
             await Task.Delay(1000, stoppingToken);
         }
     }
+}
 }

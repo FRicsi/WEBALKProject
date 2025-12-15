@@ -63,7 +63,7 @@ public class OpenAIImageService
                 Style = req.Style
             };
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             // fallback – a rendszer NEM HAL MEG
             return new ImageGenerationResponse
