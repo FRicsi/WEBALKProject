@@ -1,4 +1,10 @@
 namespace MinervAI.Workers;
+using MinervAI.Services;
+using MinervAI.Models;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+
+namespace MinervAI.Workers;
 
 public class MinervaImageWorker : BackgroundService
 {
