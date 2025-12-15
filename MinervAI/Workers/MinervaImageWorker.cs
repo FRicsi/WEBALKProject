@@ -33,7 +33,7 @@ public class MinervaImageWorker : BackgroundService
                 try
                 {
                     var image = await _openAIImageService
-                        .GenerateImageAsync(req, prompt);
+                        .GenerateImageBase64Async(req, prompt, stoppingToken);
 
                     _courseImageService.StoreResult(req.CourseId, image);
                 }
@@ -47,7 +47,7 @@ public class MinervaImageWorker : BackgroundService
             }
 
             await Task.Delay(1000, stoppingToken);
-        }
+        }   
     }
 }
 }

@@ -15,8 +15,10 @@ builder.Services.AddHttpClient("OpenAI", client =>
 builder.Services.AddControllers();
 
 // Services
-builder.Services.AddScoped<ImagePromptBuilderService>();
-builder.Services.AddScoped<CourseImageService>();
+/*builder.Services.AddScoped<ImagePromptBuilderService>();
+builder.Services.AddScoped<CourseImageService>();*/
+builder.Services.AddSingleton<CourseImageService>();
+builder.Services.AddSingleton<ImagePromptBuilderService>();
 builder.Services.AddSingleton<OpenAIImageService>();
 
 // Background worker

@@ -10,68 +10,62 @@ public class OpenAIImageService
 {
     private readonly HttpClient _http;
     private readonly OpenAISettings _settings;
+    private readonly ILogger<OpenAIImageService> _logger;
 
     public OpenAIImageService(
-        HttpClient http,
-        IOptions<OpenAISettings> options)
+        IHttpClientFactory factory,
+        IOptions<OpenAISettings> settings,
+        ILogger<OpenAIImageService> logger)
     {
-        _http = http;
-        _settings = options.Value;
+        _http = factory.CreateClient("OpenAI");
+        _settings = settings.Value;
+        _logger = logger;
+
+        _http.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _settings.ApiKey);
     }
 
-    public async Task<ImageGenerationResponse> GenerateImageAsync(
+    public async Task<ImageGenerationResponse> GenerateImageBase64Async(
         ImageGenerationRequest req,
-        string prompt)
+        string prompt,
+        CancellationToken ct)
     {
-        try
+        var payload = new
         {
-            if (string.IsNullOrWhiteSpace(_settings.ApiKey))
-                throw new InvalidOperationException("OpenAI API key not configured.");
+            model = _settings.Model,          // gpt-image-1
+            prompt = prompt,
+            size = _settings.ImageSize,       // 1024x1024
+            /*response_format = "b64_json"*/
+        };
 
-            var requestBody = new
-            {
-                model = "gpt-image-1",
-                prompt = prompt,
-                size = "1024x1024"
-            };
+        var json = JsonSerializer.Serialize(payload);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var json = JsonSerializer.Serialize(requestBody);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
+        var response = await _http.PostAsync(
+            "images/generations",
+            content,
+            ct);
 
-            _http.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", _settings.ApiKey);
-
-            var response = await _http.PostAsync(
-                "https://api.openai.com/v1/images/generations",
-                content);
-
-            response.EnsureSuccessStatusCode();
-
-            using var stream = await response.Content.ReadAsStreamAsync();
-            using var doc = await JsonDocument.ParseAsync(stream);
-
-            var base64 =
-                doc.RootElement
-                   .GetProperty("data")[0]
-                   .GetProperty("b64_json")
-                   .GetString();
-
-            return new ImageGenerationResponse
-            {
-                Base64Image = base64!,
-                PromptUsed = prompt,
-                Style = req.Style
-            };
-        }
-        catch (Exception)
+        if (!response.IsSuccessStatusCode)
         {
-            // fallback – a rendszer NEM HAL MEG
-            return new ImageGenerationResponse
-            {
-                Base64Image = CourseImageService.TransparentPixel,
-                PromptUsed = prompt + " (fallback)",
-                Style = req.Style
-            };
+            var error = await response.Content.ReadAsStringAsync(ct);
+            _logger.LogError("OpenAI error response: {Error}", error);
+            throw new HttpRequestException(error);
         }
+
+        using var stream = await response.Content.ReadAsStreamAsync(ct);
+        using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
+
+        var base64 = doc.RootElement
+            .GetProperty("data")[0]
+            .GetProperty("b64_json")
+            .GetString();
+
+        return new ImageGenerationResponse
+        {
+            Base64Image = base64!,
+            PromptUsed = prompt,
+            Style = req.Style
+        };
     }
 }
