@@ -1,44 +1,30 @@
-using Microsoft.OpenApi.Models;
-using System.Reflection;
+using MinervAI.Models;
+using MinervAI.Services;
+using MinervAI.Workers;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Controllers
-builder.Services.AddControllers();
+builder.Services.Configure<OpenAISettings>(
+    builder.Configuration.GetSection("OpenAI"));
 
-// Swagger (same structure as GdeWebAPI)
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
+builder.Services.AddHttpClient("OpenAI", client =>
 {
-    c.EnableAnnotations();
-    c.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "MinervAI API",
-        Version = "v1",
-        Description = "AI-generated course illustrations"
-    });
-
-    // Optional: XML docs if present
-    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-    if (File.Exists(xmlPath))
-        c.IncludeXmlComments(xmlPath);
+    client.BaseAddress = new Uri("https://api.openai.com/v1/");
 });
 
+builder.Services.AddControllers();
+
+// Services
+/*builder.Services.AddScoped<ImagePromptBuilderService>();
+builder.Services.AddScoped<CourseImageService>();*/
+builder.Services.AddSingleton<CourseImageService>();
+builder.Services.AddSingleton<ImagePromptBuilderService>();
+builder.Services.AddSingleton<OpenAIImageService>();
+
+// Background worker
+builder.Services.AddHostedService<MinervaImageWorker>();
+
 var app = builder.Build();
-
-// Swagger UI (same structure as GdeWebAPI)
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "MinervAI API v1");
-        c.EnableDeepLinking();
-    });
-}
-
-app.UseHttpsRedirection();
 
 app.MapControllers();
 

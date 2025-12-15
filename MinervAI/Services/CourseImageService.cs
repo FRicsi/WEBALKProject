@@ -1,31 +1,54 @@
 using MinervAI.Models;
+using System.Collections.Concurrent;
 
 namespace MinervAI.Services;
 
 public class CourseImageService
 {
-    private readonly ImagePromptBuilderService _promptBuilder;
-    private readonly OpenAiImageService _aiService;
+    public const string TransparentPixel =
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=";
 
-    public CourseImageService(
-        ImagePromptBuilderService promptBuilder,
-        OpenAiImageService aiService)
+    private readonly ConcurrentQueue<(ImageGenerationRequest req, string prompt)> _queue = new();
+    private readonly ConcurrentDictionary<int, ImageGenerationResponse> _cache = new();
+
+    public CourseImageService()
     {
-        _promptBuilder = promptBuilder;
-        _aiService = aiService;
+    }
+    public Task<ImageGenerationResponse> GenerateImageAsync(
+        ImageGenerationRequest req, string prompt)
+    {
+        _queue.Enqueue((req, prompt));
+
+        // Azonnali válasz: "folyamatban" lesz
+        return Task.FromResult(new ImageGenerationResponse
+        {
+            Base64Image = TransparentPixel,
+            PromptUsed = prompt,
+            Style = req.Style
+        });
     }
 
-    public async Task<ImageGenerationResponse> GenerateImageAsync(string courseName, string style)
+    public bool TryDequeue(out ImageGenerationRequest req, out string prompt)
     {
-        var prompt = _promptBuilder.BuildPrompt(courseName, style);
-        var base64 = await _aiService.GenerateImageBase64Async(prompt);
-
-        return new ImageGenerationResponse
+        if (_queue.TryDequeue(out var item))
         {
-            Success = true,
-            Style = style,
-            ImageBase64 = base64
-        };
+            req = item.req;
+            prompt = item.prompt;
+            return true;
+        }
+
+        req = null!;
+        prompt = null!;
+        return false;
+    }
+
+    public void StoreResult(int courseId, ImageGenerationResponse result)
+    {
+        _cache[courseId] = result;
+    }
+
+    public bool TryGetResult(int courseId, out ImageGenerationResponse result)
+    {
+        return _cache.TryGetValue(courseId, out result!);
     }
 }
-

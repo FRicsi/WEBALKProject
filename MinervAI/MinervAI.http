@@ -3,4 +3,19 @@
 GET {{MinervAI_HostAddress}}/weatherforecast/
 Accept: application/json
 
-###
+### Test ping
+GET {{MinervAI_HostAddress}}/api/test/ping
+
+### Image API ping
+GET {{MinervAI_HostAddress}}/api/image/ping
+
+### Generate fake image
+POST {{MinervAI_HostAddress}}/api/image/generate
+Content-Type: application/json
+
+{
+  "courseId": 1,
+  "courseTitle": "AI alapok",
+  "description": "Bevezetés a mesterséges intelligenciába",
+  "style": "low-poly"
+}

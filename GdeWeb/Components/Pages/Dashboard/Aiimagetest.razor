@@ -1,0 +1,43 @@
+@page "/ai-image-test"
+@inject HttpClient Http
+
+<h3>AI Image Test</h3>
+
+<button class="btn btn-primary" @onclick="GenerateImage">
+    Generate image
+</button>
+
+@if (!string.IsNullOrEmpty(ImageBase64))
+{
+    <div style="margin-top:20px">
+        <img src="data:image/png;base64,@ImageBase64"
+             style="max-width: 400px; border: 1px solid #ccc;" />
+    </div>
+}
+
+@code {
+    string? ImageBase64;
+
+    async Task GenerateImage()
+    {
+        var request = new
+        {
+            courseId = 1,
+            style = "low-poly"
+        };
+
+        var response = await Http.PostAsJsonAsync(
+            "http://localhost:5007/api/image/generate",
+            request);
+
+        var result = await response.Content
+            .ReadFromJsonAsync<ImageResponse>();
+
+        ImageBase64 = result?.Base64Image;
+    }
+
+    class ImageResponse
+    {
+        public string Base64Image { get; set; } = "";
+    }
+}
