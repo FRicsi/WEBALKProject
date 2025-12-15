@@ -3,13 +3,16 @@ namespace MinervAI.Workers;
 public class MinervaImageWorker : BackgroundService
 {
     private readonly CourseImageService _courseImageService;
+    private readonly OpenAIImageService _openAIImageService;
     private readonly ILogger<MinervaImageWorker> _logger;
 
     public MinervaImageWorker(
         CourseImageService courseImageService,
+        OpenAIImageService openAIImageService,
         ILogger<MinervaImageWorker> logger)
     {
         _courseImageService = courseImageService;
+        _openAIImageService = openAIImageService;
         _logger = logger;
     }
 
@@ -23,15 +26,20 @@ public class MinervaImageWorker : BackgroundService
                     "Generating image in background for course {CourseId}",
                     req.CourseId);
 
-                // IDE JÖN MAJD AZ OPENAI HÍVÁS
-                var fakeImage = new ImageGenerationResponse
+                try
                 {
-                    Base64Image = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=",
-                    PromptUsed = prompt,
-                    Style = req.Style
-                };
+                    var image = await _openAIImageService
+                        .GenerateImageAsync(req, prompt);
 
-                _courseImageService.StoreResult(req.CourseId, fakeImage);
+                    _courseImageService.StoreResult(req.CourseId, image);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(
+                        ex,
+                        "Image generation failed for course {CourseId}",
+                        req.CourseId);
+                }
             }
 
             await Task.Delay(1000, stoppingToken);
